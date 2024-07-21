@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { GoogleMap, useLoadScript, Marker, Libraries } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Marker, MarkerClusterer, Libraries } from '@react-google-maps/api';
 
 const libraries: Libraries = ['places'];
 
@@ -21,7 +21,7 @@ interface MarkerType {
   lat: number;
   lng: number;
   time: Date;
-  id: number; // Додаємо поле для ідентифікації маркера
+  id: number;
 }
 
 const Map = () => {
@@ -36,21 +36,19 @@ const Map = () => {
   const onMapClick = useCallback((event: google.maps.MapMouseEvent) => {
     if (!event.latLng) return;
 
-    const lat = event.latLng?.lat();
-    const lng = event.latLng?.lng();
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
 
-    if (lat !== undefined && lng !== undefined) {
-      setMarkers((current) => [
-        ...current,
-        {
-          lat,
-          lng,
-          time: new Date(),
-          id: nextId, // Додаємо унікальний ідентифікатор
-        },
-      ]);
-      setNextId(nextId + 1); // Оновлюємо ідентифікатор для наступного маркера
-    }
+    setMarkers((current) => [
+      ...current,
+      {
+        lat,
+        lng,
+        time: new Date(),
+        id: nextId,
+      },
+    ]);
+    setNextId(nextId + 1);
   }, [nextId]);
 
   const handleMarkerDragEnd = (e: google.maps.MapMouseEvent, markerId: number) => {
@@ -70,7 +68,7 @@ const Map = () => {
 
   const clearMarkers = () => {
     setMarkers([]);
-    setNextId(1); // Скидаємо ідентифікатор
+    setNextId(1);
   };
 
   if (loadError) return <div>Error loading maps</div>;
@@ -85,16 +83,23 @@ const Map = () => {
         center={center}
         onClick={onMapClick}
       >
-        {markers.map((marker) => (
-          <Marker
-            key={marker.id}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            label={marker.id.toString()} 
-            draggable
-            onDragEnd={(e) => handleMarkerDragEnd(e, marker.id)}
-            onClick={() => handleMarkerClick(marker.id)} 
-          />
-        ))}
+        <MarkerClusterer>
+          {(clusterer) => (
+            <>
+              {markers.map((marker) => (
+                <Marker
+                  key={marker.id}
+                  position={{ lat: marker.lat, lng: marker.lng }}
+                  label={marker.id.toString()}
+                  draggable
+                  clusterer={clusterer}
+                  onDragEnd={(e) => handleMarkerDragEnd(e, marker.id)}
+                  onClick={() => handleMarkerClick(marker.id)}
+                />
+              ))}
+            </>
+          )}
+        </MarkerClusterer>
       </GoogleMap>
     </div>
   );
